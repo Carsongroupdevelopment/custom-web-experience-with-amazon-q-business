@@ -1,7 +1,11 @@
+import streamlit as st
 
+# Set page configuration
+st.set_page_config(page_title="Simple App")
 
+# Display "Hello World" on the screen
+st.title("Hello World")
 
-print("hello world")
 
 # from datetime import datetime, timedelta, timezone
 #
