@@ -2,6 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 import jwt
 import streamlit as st
+import boto3
 import utils
 from streamlit_feedback import streamlit_feedback
 
@@ -25,6 +26,26 @@ def clear_chat_history():
     st.session_state["conversationId"] = ""
     st.session_state["parentMessageId"] = ""
 
+# Function to retrieve AWS credentials from Identity Pool
+def get_aws_credentials(identity_pool_id, region, id_token):
+    cognito_identity_client = boto3.client("cognito-identity", region_name=region)
+    try:
+        # Step 1: Get the Identity ID
+        response = cognito_identity_client.get_id(
+            IdentityPoolId=identity_pool_id,
+            Logins={f"cognito-idp.us-west-2.amazonaws.com/us-west-2:a1448413-7bb0-4b75-bd90-04ce945f405a": id_token}
+        )
+        identity_id = response["IdentityId"]
+
+        # Step 2: Get AWS credentials for the Identity ID
+        credentials_response = cognito_identity_client.get_credentials_for_identity(
+            IdentityId=identity_id,
+            Logins={f"cognito-idp.us-west-2.amazonaws.com/us-west-2:a1448413-7bb0-4b75-bd90-04ce945f405a": id_token}
+        )
+        return credentials_response["Credentials"]
+    except Exception as e:
+        st.error(f"Failed to retrieve AWS credentials: {e}")
+        return None
 
 oauth2 = utils.configure_oauth_component()
 if "token" not in st.session_state:
@@ -47,18 +68,29 @@ else:
         st.session_state.token = token
         st.rerun()
 
-    # Automatically log the JWT token to the browser console
-if "token" in st.session_state and "id_token" in st.session_state["token"]:
-    raw_token = st.session_state["token"]["id_token"]
-    st.components.v1.html(
-        f"""
-        <script>
-            console.log("JWT Token:", "{raw_token}");
-        </script>
-        """,
-        height=0,
-    )
+    # Retrieve AWS credentials using the Cognito Identity Pool
+    if st.session_state.aws_credentials is None:
+        identity_pool_id = "us-west-2:a1448413-7bb0-4b75-bd90-04ce945f405a"  # Replace with your Cognito Identity Pool ID
+        region = "us-west-2"  # Replace with your AWS region
+        id_token = st.session_state.token["id_token"]
+        aws_credentials = get_aws_credentials(identity_pool_id, region, id_token)
+        if aws_credentials:
+            st.session_state.aws_credentials = aws_credentials
+            st.success("AWS credentials successfully retrieved!")
+        else:
+            st.error("Unable to retrieve AWS credentials.")
 
+    # Automatically log the JWT token to the browser console
+    if "id_token" in st.session_state["token"]:
+        raw_token = st.session_state["token"]["id_token"]
+        st.components.v1.html(
+            f"""
+            <script>
+                console.log("JWT Token:", "{raw_token}");
+            </script>
+            """,
+            height=0,
+        )
 
     col1, col2 = st.columns([1, 1])
     with col1:
