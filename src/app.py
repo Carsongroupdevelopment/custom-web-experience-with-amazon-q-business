@@ -175,6 +175,9 @@ else:
                         full_response = f"""{response["answer"]}\n\n---\n{response["references"]}"""
                     else:
                         full_response = f"""{response["answer"]}\n\n---\nNo sources"""
+                else:
+                    full_response = "Sorry, there was an error retrieving the response."
+
                 placeholder.markdown(full_response)
                 st.session_state["conversationId"] = response["conversationId"]
                 st.session_state["parentMessageId"] = response["parentMessageId"]
