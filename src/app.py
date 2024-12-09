@@ -54,7 +54,8 @@ def create_aws_session(aws_credentials):
         session = boto3.Session(
             aws_access_key_id=aws_credentials["AccessKeyId"],
             aws_secret_access_key=aws_credentials["SecretKey"],
-            aws_session_token=aws_credentials["SessionToken"]
+            aws_session_token=aws_credentials["SessionToken"],
+            region_name="us-west-2"
         )
         return session
     except Exception:
