@@ -111,27 +111,27 @@ def get_qclient(idc_id_token: str):
         aws_secret_access_key=st.session_state.aws_credentials["SecretKey"],
         aws_session_token=st.session_state.aws_credentials["SessionToken"],
     )
+
     amazon_q = session.client("qbusiness", REGION)
     return amazon_q
 
 
 # This code invoke chat_sync api and format the response for UI
 def get_queue_chain(
-    prompt_input, conversation_id, parent_message_id, token
+    prompt_input, conversation_id, parent_message_id, q_client
 ):
     """"
     This method is used to get the answer from the queue chain.
     """
-    amazon_q = get_qclient(token)
     if conversation_id != "":
-        answer = amazon_q.chat_sync(
+        answer = q_client.chat_sync(
             applicationId=AMAZON_Q_APP_ID,
             userMessage=prompt_input,
             conversationId=conversation_id,
             parentMessageId=parent_message_id,
         )
     else:
-        answer = amazon_q.chat_sync(
+        answer = q_client.chat_sync(
             applicationId=AMAZON_Q_APP_ID, userMessage=prompt_input
         )
 
