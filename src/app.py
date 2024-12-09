@@ -33,14 +33,14 @@ def get_aws_credentials(identity_pool_id, region, id_token):
         # Step 1: Get the Identity ID
         response = cognito_identity_client.get_id(
             IdentityPoolId=identity_pool_id,
-            Logins={f"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
+            Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
         )
         identity_id = response["IdentityId"]
 
         # Step 2: Get AWS credentials for the Identity ID
         credentials_response = cognito_identity_client.get_credentials_for_identity(
             IdentityId=identity_id,
-            Logins={f"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
+            Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
         )
         return credentials_response["Credentials"]
     except Exception as e:
