@@ -76,8 +76,7 @@ def call_amazon_q_with_credentials(aws_credentials, token):
         prompt,
         st.session_state["conversationId"],
         st.session_state["parentMessageId"],
-        token["id_token"],  # Pass the ID token here
-        aws_client=q_client   # Pass the Q client here
+        token["id_token"]
     )
 
     # You can use the response from Amazon Q (based on the response format)
