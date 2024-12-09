@@ -53,7 +53,7 @@ def create_aws_session(aws_credentials):
     try:
         session = boto3.Session(
             aws_access_key_id=aws_credentials["AccessKeyId"],
-            aws_secret_access_key=aws_credentials["SecretAccessKey"],
+            aws_secret_access_key=aws_credentials["SecretKey"],
             aws_session_token=aws_credentials["SessionToken"]
         )
         return session
@@ -175,12 +175,14 @@ else:
                         full_response = f"""{response["answer"]}\n\n---\n{response["references"]}"""
                     else:
                         full_response = f"""{response["answer"]}\n\n---\nNo sources"""
+
+                    st.session_state["conversationId"] = response["conversationId"]
+                    st.session_state["parentMessageId"] = response["parentMessageId"]
                 else:
                     full_response = "Sorry, there was an error retrieving the response."
 
                 placeholder.markdown(full_response)
-                st.session_state["conversationId"] = response["conversationId"]
-                st.session_state["parentMessageId"] = response["parentMessageId"]
+
 
         st.session_state.messages.append({"role": "assistant", "content": full_response})
         feedback = streamlit_feedback(
