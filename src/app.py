@@ -65,12 +65,16 @@ def create_aws_session(aws_credentials):
 # Function to call Amazon Q (or any other AWS service) using the credentials
 def call_amazon_q_with_credentials(aws_credentials, token):
     session = create_aws_session(aws_credentials)
+
+    sts_client = boto3.client('sts')
+    caller_identity = sts_client.get_caller_identity()
+    print("Caller Identity:", caller_identity)
     if session is None:
         return None
 
     # Example: Initialize a Q client using the session
     q_client = session.client('qbusiness')
-
+    print("Q client", q_client)
     # Call to Amazon Q with the token and AWS credentials
     response = utils.get_queue_chain(
         prompt,
