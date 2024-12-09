@@ -68,13 +68,27 @@ def call_amazon_q_with_credentials(aws_credentials, token):
 
     sts_client = boto3.client('sts')
     caller_identity = sts_client.get_caller_identity()
-    print("Caller Identity:", caller_identity)
+    st.components.v1.html(
+        f"""
+                <script>
+                    console.log("Caller Identity", "{caller_identity}");
+                </script>
+                """,
+        height=0,
+    )
     if session is None:
         return None
 
     # Example: Initialize a Q client using the session
     q_client = session.client('qbusiness')
-    print("Q client", q_client)
+    st.components.v1.html(
+        f"""
+            <script>
+                console.log("Q client", "{q_client}");
+            </script>
+            """,
+        height=0,
+    )
     # Call to Amazon Q with the token and AWS credentials
     response = utils.get_queue_chain(
         prompt,
