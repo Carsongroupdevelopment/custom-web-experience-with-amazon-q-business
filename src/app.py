@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-
 import jwt
 import streamlit as st
 import boto3
@@ -42,10 +41,46 @@ def get_aws_credentials(identity_pool_id, region, id_token):
             IdentityId=identity_id,
             Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
         )
+
+        st.write(st.session_state.aws_credentials)
         return credentials_response["Credentials"]
     except Exception as e:
         st.error(f"Failed to retrieve AWS credentials: {e}")
         return None
+
+# Function to create a boto3 session with the retrieved AWS credentials
+def create_aws_session(aws_credentials):
+    try:
+        session = boto3.Session(
+            aws_access_key_id=aws_credentials["AccessKeyId"],
+            aws_secret_access_key=aws_credentials["SecretAccessKey"],
+            aws_session_token=aws_credentials["SessionToken"]
+        )
+        return session
+    except Exception:
+        st.error("AWS credentials are missing or invalid.")
+        return None
+
+# Function to call Amazon Q (or any other AWS service) using the credentials
+def call_amazon_q_with_credentials(aws_credentials, token):
+    session = create_aws_session(aws_credentials)
+    if session is None:
+        return None
+
+    # Example: Initialize a Q client using the session
+    q_client = session.client('q-service')  # Replace with actual Q client if needed
+
+    # Call to Amazon Q with the token and AWS credentials
+    response = utils.get_queue_chain(
+        prompt,
+        st.session_state["conversationId"],
+        st.session_state["parentMessageId"],
+        token["id_token"],  # Pass the ID token here
+        aws_client=q_client   # Pass the Q client here
+    )
+
+    # You can use the response from Amazon Q (based on the response format)
+    return response
 
 oauth2 = utils.configure_oauth_component()
 if "token" not in st.session_state:
@@ -76,6 +111,7 @@ else:
         aws_credentials = get_aws_credentials(identity_pool_id, region, id_token)
         if aws_credentials:
             st.session_state.aws_credentials = aws_credentials
+            st.write(st.session_state.aws_credentials)
             st.success("AWS credentials successfully retrieved!")
         else:
             st.error("Unable to retrieve AWS credentials.")
@@ -130,16 +166,15 @@ else:
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 placeholder = st.empty()
-                response = utils.get_queue_chain(
-                    prompt,
-                    st.session_state["conversationId"],
-                    st.session_state["parentMessageId"],
-                    st.session_state.token["id_token"]
+                response = call_amazon_q_with_credentials(
+                    st.session_state.aws_credentials,
+                    st.session_state.token
                 )
-                if "references" in response:
-                    full_response = f"""{response["answer"]}\n\n---\n{response["references"]}"""
-                else:
-                    full_response = f"""{response["answer"]}\n\n---\nNo sources"""
+                if response:
+                    if "references" in response:
+                        full_response = f"""{response["answer"]}\n\n---\n{response["references"]}"""
+                    else:
+                        full_response = f"""{response["answer"]}\n\n---\nNo sources"""
                 placeholder.markdown(full_response)
                 st.session_state["conversationId"] = response["conversationId"]
                 st.session_state["parentMessageId"] = response["parentMessageId"]
