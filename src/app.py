@@ -68,7 +68,7 @@ def call_amazon_q_with_credentials(aws_credentials, token):
         return None
 
     # Example: Initialize a Q client using the session
-    q_client = session.client('q-service')  # Replace with actual Q client if needed
+    q_client = session.client('qbusiness')  # Replace with actual Q client if needed
 
     # Call to Amazon Q with the token and AWS credentials
     response = utils.get_queue_chain(
