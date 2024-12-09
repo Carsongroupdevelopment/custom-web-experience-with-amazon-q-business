@@ -47,6 +47,19 @@ else:
         st.session_state.token = token
         st.rerun()
 
+    # Automatically log the JWT token to the browser console
+if "token" in st.session_state and "id_token" in st.session_state["token"]:
+    raw_token = st.session_state["token"]["id_token"]
+    st.components.v1.html(
+        f"""
+        <script>
+            console.log("JWT Token:", "{raw_token}");
+        </script>
+        """,
+        height=0,
+    )
+
+
     col1, col2 = st.columns([1, 1])
     with col1:
         st.write("Welcome: ", user_email)
