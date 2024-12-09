@@ -76,7 +76,6 @@ def call_amazon_q_with_credentials(aws_credentials, token):
         prompt,
         st.session_state["conversationId"],
         st.session_state["parentMessageId"],
-        token["id_token"],
         q_client
     )
 
