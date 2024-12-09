@@ -108,7 +108,7 @@ def get_qclient(idc_id_token: str):
 
     session = boto3.Session(
         aws_access_key_id=st.session_state.aws_credentials["AccessKeyId"],
-        aws_secret_access_key=st.session_state.aws_credentials["SecretAccessKey"],
+        aws_secret_access_key=st.session_state.aws_credentials["SecretKey"],
         aws_session_token=st.session_state.aws_credentials["SessionToken"],
     )
     amazon_q = session.client("qbusiness", REGION)
