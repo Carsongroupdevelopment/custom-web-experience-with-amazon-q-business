@@ -66,16 +66,19 @@ def create_aws_session(aws_credentials):
 def call_amazon_q_with_credentials(aws_credentials, token):
     session = create_aws_session(aws_credentials)
 
-    sts_client = boto3.client('sts')
-    caller_identity = sts_client.get_caller_identity()
-    st.components.v1.html(
-        f"""
-                <script>
-                    console.log("Caller Identity", "{caller_identity}");
-                </script>
+    if session:
+        # Create the sts_client from the new session
+        sts_client = session.client('sts')
+        caller_identity = sts_client.get_caller_identity()
+        st.components.v1.html(
+            f"""
+                    <script>
+                        console.log("Caller Identity After assume", "{caller_identity}");
+                    </script>
                 """,
-        height=0,
-    )
+            height=0,
+        )
+
     if session is None:
         return None
 
