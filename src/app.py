@@ -81,14 +81,6 @@ def call_amazon_q_with_credentials(aws_credentials, token):
 
     # Example: Initialize a Q client using the session
     q_client = session.client('qbusiness')
-    st.components.v1.html(
-        f"""
-            <script>
-                console.log("Q client", "{q_client}");
-            </script>
-            """,
-        height=0,
-    )
     # Call to Amazon Q with the token and AWS credentials
     response = utils.get_queue_chain(
         prompt,
@@ -113,6 +105,17 @@ else:
     token = st.session_state["token"]
     refresh_token = token["refresh_token"]  # Save long-lived refresh_token
     user_email = jwt.decode(token["id_token"], options={"verify_signature": False})["email"]
+
+    sts_client = boto3.client('sts')
+    caller_identity = sts_client.get_caller_identity()
+    st.components.v1.html(
+        f"""
+                <script>
+                    console.log("Caller Identity Before assume", "{caller_identity}");
+                </script>
+                """,
+        height=0,
+    )
 
     if st.button("Refresh Cognito Token"):
         # Refresh token if expired or on button click
@@ -145,6 +148,17 @@ else:
             """,
             height=0,
         )
+
+    sts_client = boto3.client('sts')
+    caller_identity = sts_client.get_caller_identity()
+    st.components.v1.html(
+        f"""
+                <script>
+                    console.log("Caller Identity AFTER get creds", "{caller_identity}");
+                </script>
+                """,
+        height=0,
+    )
 
     col1, col2 = st.columns([1, 1])
     with col1:
