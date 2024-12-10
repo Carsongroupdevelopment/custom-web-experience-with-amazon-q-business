@@ -106,17 +106,6 @@ else:
     refresh_token = token["refresh_token"]  # Save long-lived refresh_token
     user_email = jwt.decode(token["id_token"], options={"verify_signature": False})["email"]
 
-    sts_client = boto3.client('sts')
-    caller_identity = sts_client.get_caller_identity()
-    st.components.v1.html(
-        f"""
-                <script>
-                    console.log("Caller Identity Before assume", "{caller_identity}");
-                </script>
-                """,
-        height=0,
-    )
-
     if st.button("Refresh Cognito Token"):
         # Refresh token if expired or on button click
         token = oauth2.refresh_token(token, force=True)
@@ -134,7 +123,19 @@ else:
             st.session_state.aws_credentials = aws_credentials
             st.write(st.session_state.aws_credentials)
             st.success("AWS credentials successfully retrieved!")
-        else:
+
+        sts_client = boto3.client('sts')
+        caller_identity = sts_client.get_caller_identity()
+        st.components.v1.html(
+            f"""
+                    <script>
+                        console.log("Caller Identity Before assume", "{caller_identity}");
+                    </script>
+                    """,
+            height=0,
+        )
+
+    else:
             st.error("Unable to retrieve AWS credentials.")
 
     # Automatically log the JWT token to the browser console
