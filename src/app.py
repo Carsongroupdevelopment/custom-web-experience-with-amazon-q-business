@@ -43,14 +43,14 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     cognito_identity_client = boto3.client("cognito-identity", region_name=region)
     response = cognito_identity_client.get_id(
         IdentityPoolId=identity_pool_id,
-        Logins={f"cognito-idp.{region}.amazonaws.com/YOUR_USER_POOL_ID": id_token}
+        Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
     )
     identity_id = response["IdentityId"]
 
     # Step 3: Get AWS credentials for the Identity ID
     credentials_response = cognito_identity_client.get_credentials_for_identity(
         IdentityId=identity_id,
-        Logins={f"cognito-idp.{region}.amazonaws.com/YOUR_USER_POOL_ID": id_token}
+        Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
     )
     credentials = credentials_response["Credentials"]
     st.write(credentials)
