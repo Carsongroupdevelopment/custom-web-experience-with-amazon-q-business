@@ -61,7 +61,7 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
 
 # Function to create a boto3 session with the retrieved AWS credentials
-def create_aws_session(aws_credentials, session_tags):
+def create_aws_session(aws_credentials, tags):
   try:
     session = boto3.Session(
         aws_access_key_id=aws_credentials["AccessKeyId"],
@@ -74,8 +74,8 @@ def create_aws_session(aws_credentials, session_tags):
     sts_client = session.client('sts')
     assumed_role = sts_client.assume_role(
         RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
-        RoleSessionName="new_q_session",
-        Tags=session_tags
+        RoleSessionName="session_name",
+        Tags=tags
     )
 
     return assumed_role["Credentials"]
