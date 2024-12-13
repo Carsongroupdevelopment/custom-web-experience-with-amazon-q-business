@@ -87,7 +87,7 @@ def create_aws_session(aws_credentials, tags):
     # Create a new session with the assumed role credentials
     assumed_session = boto3.Session(
         aws_access_key_id=temp_credentials["AccessKeyId"],
-        aws_secret_access_key=temp_credentials["SecretKey"],
+        aws_secret_access_key=temp_credentials["SecretAccessKey"],
         aws_session_token=temp_credentials["SessionToken"],
         region_name="us-west-2"
     )
