@@ -37,7 +37,7 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     tags = [{"Key": "Email", "Value": email}]
     if not email:
       raise ValueError("Email claim is missing from the ID token")
-
+  st.write(email)
     # Step 1: Get the Identity ID
     response = cognito_identity_client.get_id(
         IdentityPoolId=identity_pool_id,
@@ -53,6 +53,8 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
     # Extract the credentials from the response
     credentials = credentials_response["Credentials"]
+    st.write(credentials)
+
 
     # Step 3: Assume the role with tags using the obtained credentials
     assumed_role = sts_client.assume_role(
@@ -65,6 +67,7 @@ def get_aws_credentials(identity_pool_id, region, id_token):
           "SessionToken": credentials["SessionToken"]
         }
     )
+    st.write("Assumed Role")
 
     return assumed_role["Credentials"]
   except Exception as e:
