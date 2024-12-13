@@ -39,7 +39,7 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     # Prepare tags for role assumption
     tags = [
       {"Key": "Email", "Value": email},
-      {"Key": "FederatedProvider", "Value": "aws:iam"}
+      {"Key": "FederatedProvider", "Value": "arn:aws:iam::703671919012:oidc-provider/cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ"}
     ]
 
     # Step 2: Get the Identity ID from Cognito
