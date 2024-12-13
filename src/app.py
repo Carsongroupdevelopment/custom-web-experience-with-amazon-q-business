@@ -27,8 +27,6 @@ def clear_chat_history():
   st.session_state["conversationId"] = ""
   st.session_state["parentMessageId"] = ""
 
-
-# Function to retrieve AWS credentials from Identity Pool
 def get_aws_credentials(identity_pool_id, region, id_token):
   cognito_identity_client = boto3.client("cognito-identity", region_name=region)
   sts_client = boto3.client("sts", region_name=region)
@@ -36,34 +34,44 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     # Decode the ID token to get the email claim
     decoded_token = jwt.decode(id_token, options={"verify_signature": False})
     email = decoded_token.get("email")
+    tags = [{"Key": "Email", "Value": email}]
     if not email:
       raise ValueError("Email claim is missing from the ID token")
 
     # Step 1: Get the Identity ID
     response = cognito_identity_client.get_id(
         IdentityPoolId=identity_pool_id,
-        Logins={
-          "cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
+        Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
     )
     identity_id = response["IdentityId"]
 
     # Step 2: Get AWS credentials for the Identity ID
     credentials_response = cognito_identity_client.get_credentials_for_identity(
         IdentityId=identity_id,
-        Logins={
-          "cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
+        Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
     )
 
-    return credentials_response["Credentials"], email
+    # Extract the credentials from the response
+    credentials = credentials_response["Credentials"]
+
+    # Step 3: Assume the role with tags using the obtained credentials
+    assumed_role = sts_client.assume_role(
+        RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
+        RoleSessionName="session_name",
+        Tags=tags,
+        Credentials={
+          "AccessKeyId": credentials["AccessKeyId"],
+          "SecretAccessKey": credentials["SecretKey"],
+          "SessionToken": credentials["SessionToken"]
+        }
+    )
+
+    return assumed_role["Credentials"]
   except Exception as e:
     st.error(f"Failed to retrieve AWS credentials: {e}")
     return None, None
 
-
-# Function to create a boto3 session with the retrieved AWS credentials
-import boto3
-
-def create_aws_session(aws_credentials, tags):
+def create_aws_session(aws_credentials):
   try:
     # Create an initial session with the provided AWS credentials
     session = boto3.Session(
@@ -72,28 +80,7 @@ def create_aws_session(aws_credentials, tags):
         aws_session_token=aws_credentials["SessionToken"],
         region_name="us-west-2"
     )
-
-    # Use the session to create an STS client and assume a role
-    sts_client = session.client('sts')
-    assumed_role = sts_client.assume_role(
-        RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
-        RoleSessionName="session_name",
-        Tags=tags
-    )
-
-    # Extract the temporary credentials from the assumed role
-    temp_credentials = assumed_role["Credentials"]
-
-    # Create a new session with the assumed role credentials
-    assumed_session = boto3.Session(
-        aws_access_key_id=temp_credentials["AccessKeyId"],
-        aws_secret_access_key=temp_credentials["SecretAccessKey"],
-        aws_session_token=temp_credentials["SessionToken"],
-        region_name="us-west-2"
-    )
-
-    # Return the new session
-    return assumed_session
+    return session
   except Exception as e:
     print(f"Error creating AWS session: {e}")
     return None
@@ -101,37 +88,25 @@ def create_aws_session(aws_credentials, tags):
 
 
 # Function to call Amazon Q (or any other AWS service) using the credentials
-def call_amazon_q_with_credentials(aws_credentials, session_tags):
-  session = create_aws_session(aws_credentials, session_tags)
+def call_amazon_q_with_credentials(aws_credentials):
+  session = create_aws_session(aws_credentials)
 
   if session:
-    # Create the sts_client from the new session
-    sts_client = session.client('sts')
-    caller_identity = sts_client.get_caller_identity()
-    st.components.v1.html(
-        f"""
-                    <script>
-                        console.log("Caller Identity After assume", "{caller_identity}");
-                    </script>
-                """,
-        height=0,
+    # Initialize a Q client using the session
+    q_client = session.client("qbusiness")
+    # Call to Amazon Q with the token and AWS credentials
+    response = utils.get_queue_chain(
+        prompt,
+        st.session_state["conversationId"],
+        st.session_state["parentMessageId"],
+        q_client
     )
+
+    # You can use the response from Amazon Q (based on the response format)
+    return response
 
   if session is None:
     return None
-
-  # Example: Initialize a Q client using the session
-  q_client = session.client('qbusiness')
-  # Call to Amazon Q with the token and AWS credentials
-  response = utils.get_queue_chain(
-      prompt,
-      st.session_state["conversationId"],
-      st.session_state["parentMessageId"],
-      q_client
-  )
-
-  # You can use the response from Amazon Q (based on the response format)
-  return response
 
 
 oauth2 = utils.configure_oauth_component()
@@ -162,32 +137,18 @@ else:
     identity_pool_id = "us-west-2:a1448413-7bb0-4b75-bd90-04ce945f405a"  # Replace with your Cognito Identity Pool ID
     region = "us-west-2"  # Replace with your AWS region
     id_token = st.session_state.token["id_token"]
-    aws_credentials, email = get_aws_credentials(identity_pool_id, region,
-                                                 id_token)
+
+    aws_credentials = get_aws_credentials(identity_pool_id, region, id_token)
     if aws_credentials:
       st.session_state.aws_credentials = aws_credentials
       st.write(st.session_state.aws_credentials)
       st.success("AWS credentials successfully retrieved!")
-      st.success("EMAIL: " + email)
-      # Create tags
-      tags = [{"Key": "Email", "Value": email}]
-      aws_session = create_aws_session(aws_credentials, tags)
+
+      aws_session = create_aws_session(aws_credentials)
       if aws_session:
         st.session_state.aws_session = aws_session
       else:
         st.error("Unable to create AWS session with tags.")
-
-    sts_client = boto3.client('sts')
-    caller_identity = sts_client.get_caller_identity()
-    st.components.v1.html(
-        f"""
-                    <script>
-                        console.log("Caller Identity Before assume", "{caller_identity}");
-                    </script>
-                    """,
-        height=0,
-    )
-
   else:
     st.error("Unable to retrieve AWS credentials.")
 
@@ -254,8 +215,7 @@ else:
       with st.spinner("Thinking..."):
         placeholder = st.empty()
         response = call_amazon_q_with_credentials(
-            st.session_state.aws_credentials,
-            tags
+            st.session_state.aws_credentials
         )
         if response:
           if "references" in response:
