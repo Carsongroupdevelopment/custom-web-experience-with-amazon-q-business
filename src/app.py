@@ -26,6 +26,8 @@ def clear_chat_history():
     st.session_state["parentMessageId"] = ""
 
 # Function to retrieve AWS credentials from Identity Pool
+
+# Function to retrieve AWS credentials from Identity Pool with session tags
 def get_aws_credentials(identity_pool_id, region, id_token):
     cognito_identity_client = boto3.client("cognito-identity", region_name=region)
     sts_client = boto3.client("sts", region_name=region)
@@ -36,14 +38,14 @@ def get_aws_credentials(identity_pool_id, region, id_token):
         if not email:
             raise ValueError("Email claim is missing from the ID token")
 
-        # Step 1: Get the Identity ID
+        # Step 1: Get the Identity ID using the enhanced flow
         response = cognito_identity_client.get_id(
             IdentityPoolId=identity_pool_id,
             Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
         )
         identity_id = response["IdentityId"]
 
-        # Step 2: Get OpenID token for the Identity ID
+        # Step 2: Get OpenID token for the Identity ID using the enhanced flow
         openid_response = cognito_identity_client.get_open_id_token(
             IdentityId=identity_id,
             Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
@@ -52,7 +54,7 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
         # Step 3: Assume role with session tags
         assumed_role = sts_client.assume_role_with_web_identity(
-            RoleArn="arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_ROLE_NAME",
+            RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
             RoleSessionName="session_name",
             WebIdentityToken=openid_token,
             DurationSeconds=3600,
@@ -69,6 +71,7 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     except Exception as e:
         st.error(f"Failed to retrieve AWS credentials: {e}")
         return None
+
 
 # Function to create a boto3 session with the retrieved AWS credentials
 def create_aws_session(aws_credentials):
