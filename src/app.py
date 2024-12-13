@@ -38,7 +38,8 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
     # Prepare tags for role assumption
     tags = [
-      {"Key": "Email", "Value": email}
+      {"Key": "Email", "Value": email},
+      {"Key": "FederatedProvider", "Value": "arn:aws:iam::703671919012:oidc-provider/cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ"}
     ]
 
     # Step 2: Get the Identity ID from Cognito
@@ -96,6 +97,8 @@ def create_aws_session(aws_credentials):
 
 # Function to call Amazon Q (or any other AWS service) using the credentials
 def call_amazon_q_with_credentials(aws_credentials):
+
+  st.write(aws_credentials)
   session = create_aws_session(aws_credentials)
 
   if session:
@@ -221,6 +224,7 @@ else:
     with st.chat_message("assistant"):
       with st.spinner("Thinking..."):
         placeholder = st.empty()
+        st.success("Calling Amazon Q with credentials...")
         response = call_amazon_q_with_credentials(
             st.session_state.aws_credentials
         )
