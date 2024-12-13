@@ -81,7 +81,7 @@ def create_aws_session(aws_credentials):
     # Create an initial session with the provided AWS credentials
     session = boto3.Session(
         aws_access_key_id=aws_credentials["AccessKeyId"],
-        aws_secret_access_key=aws_credentials["SecretKey"],
+        aws_secret_access_key=aws_credentials["SecretAccessKey"],
         aws_session_token=aws_credentials["SessionToken"],
         region_name="us-west-2"
     )
