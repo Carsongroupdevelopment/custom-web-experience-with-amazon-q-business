@@ -61,8 +61,11 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
 
 # Function to create a boto3 session with the retrieved AWS credentials
+import boto3
+
 def create_aws_session(aws_credentials, tags):
   try:
+    # Create an initial session with the provided AWS credentials
     session = boto3.Session(
         aws_access_key_id=aws_credentials["AccessKeyId"],
         aws_secret_access_key=aws_credentials["SecretKey"],
@@ -70,7 +73,7 @@ def create_aws_session(aws_credentials, tags):
         region_name="us-west-2"
     )
 
-    # Add tags to the session
+    # Use the session to create an STS client and assume a role
     sts_client = session.client('sts')
     assumed_role = sts_client.assume_role(
         RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
@@ -78,10 +81,23 @@ def create_aws_session(aws_credentials, tags):
         Tags=tags
     )
 
-    return assumed_role["Credentials"]
+    # Extract the temporary credentials from the assumed role
+    temp_credentials = assumed_role["Credentials"]
+
+    # Create a new session with the assumed role credentials
+    assumed_session = boto3.Session(
+        aws_access_key_id=temp_credentials["AccessKeyId"],
+        aws_secret_access_key=temp_credentials["SecretAccessKey"],
+        aws_session_token=temp_credentials["SessionToken"],
+        region_name="us-west-2"
+    )
+
+    # Return the new session
+    return assumed_session
   except Exception as e:
     print(f"Error creating AWS session: {e}")
     return None
+
 
 
 # Function to call Amazon Q (or any other AWS service) using the credentials
@@ -152,7 +168,7 @@ else:
       st.session_state.aws_credentials = aws_credentials
       st.write(st.session_state.aws_credentials)
       st.success("AWS credentials successfully retrieved!")
-
+      st.success("EMAIL: " + email)
       # Create tags
       tags = [{"Key": "Email", "Value": email}]
       aws_session = create_aws_session(aws_credentials, tags)
