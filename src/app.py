@@ -35,9 +35,10 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     decoded_token = jwt.decode(id_token, options={"verify_signature": False})
     email = decoded_token.get("email")
     tags = [{"Key": "Email", "Value": email}]
+    st.write(email)
     if not email:
       raise ValueError("Email claim is missing from the ID token")
-  st.write(email)
+
     # Step 1: Get the Identity ID
     response = cognito_identity_client.get_id(
         IdentityPoolId=identity_pool_id,
