@@ -28,7 +28,14 @@ def clear_chat_history():
 # Function to retrieve AWS credentials from Identity Pool
 def get_aws_credentials(identity_pool_id, region, id_token):
     cognito_identity_client = boto3.client("cognito-identity", region_name=region)
+    sts_client = boto3.client("sts", region_name=region)
     try:
+        # Decode the ID token to get the email claim
+        decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+        email = decoded_token.get("email")
+        if not email:
+            raise ValueError("Email claim is missing from the ID token")
+
         # Step 1: Get the Identity ID
         response = cognito_identity_client.get_id(
             IdentityPoolId=identity_pool_id,
@@ -36,14 +43,29 @@ def get_aws_credentials(identity_pool_id, region, id_token):
         )
         identity_id = response["IdentityId"]
 
-        # Step 2: Get AWS credentials for the Identity ID
-        credentials_response = cognito_identity_client.get_credentials_for_identity(
+        # Step 2: Get OpenID token for the Identity ID
+        openid_response = cognito_identity_client.get_open_id_token(
             IdentityId=identity_id,
             Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
         )
+        openid_token = openid_response["Token"]
 
-        st.write(st.session_state.aws_credentials)
-        return credentials_response["Credentials"]
+        # Step 3: Assume role with session tags
+        assumed_role = sts_client.assume_role_with_web_identity(
+            RoleArn="arn:aws:iam::YOUR_ACCOUNT_ID:role/YOUR_ROLE_NAME",
+            RoleSessionName="session_name",
+            WebIdentityToken=openid_token,
+            DurationSeconds=3600,
+            Tags=[
+                {
+                    "Key": "Email",
+                    "Value": email
+                }
+            ]
+        )
+
+        credentials = assumed_role["Credentials"]
+        return credentials
     except Exception as e:
         st.error(f"Failed to retrieve AWS credentials: {e}")
         return None
