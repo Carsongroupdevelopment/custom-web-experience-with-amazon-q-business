@@ -97,7 +97,6 @@ def get_aws_credentials(identity_pool_id, region, id_token):
     assumed_role = sts_client.assume_role_with_web_identity(
         RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
         RoleSessionName="session_name",
-        Tags=tags,
         WebIdentityToken=id_token,
     )
 
