@@ -33,49 +33,49 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
 
 
-    # # Step 1: Decode the ID token to get the email claim
-    # decoded_token = jwt.decode(id_token, options={"verify_signature": False})
-    # email = decoded_token.get("email")
-    # if not email:
-    #   raise ValueError("Email claim is missing from the ID token")
-    # st.write(email)
-    #
-    # # Prepare tags for role assumption
-    # tags = [
-    #   {"Key": "Email", "Value": email},
-    #   {"Key": "FederatedProvider", "Value": "arn:aws:iam::703671919012:oidc-provider/cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ"}
-    # ]
-    #
-    # # Step 2: Get the Identity ID from Cognito
-    # cognito_identity_client = boto3.client("cognito-identity", region_name=region)
-    # response = cognito_identity_client.get_id(
-    #     IdentityPoolId=identity_pool_id,
-    #     Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
-    # )
-    # identity_id = response["IdentityId"]
-    #
-    # # Step 3: Get AWS credentials for the Identity ID
-    # credentials_response = cognito_identity_client.get_credentials_for_identity(
-    #     IdentityId=identity_id,
-    #     Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
-    # )
-    # credentials = credentials_response["Credentials"]
-    # st.write(credentials)
-    #
-    # # Step 4: Assume the role using the temporary credentials
-    # session = boto3.Session(
-    #     aws_access_key_id=credentials["AccessKeyId"],
-    #     aws_secret_access_key=credentials["SecretKey"],
-    #     aws_session_token=credentials["SessionToken"],
-    #     region_name=region
-    # )
-    # sts_client = session.client("sts")
-    # assumed_role = sts_client.assume_role(
-    #     RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
-    #     RoleSessionName="session_name",
-    #     Tags=tags
-    # )
-    # st.write("Assumed Role")
+    # Step 1: Decode the ID token to get the email claim
+    decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+    email = decoded_token.get("email")
+    if not email:
+      raise ValueError("Email claim is missing from the ID token")
+    st.write(email)
+
+    # Prepare tags for role assumption
+    tags = [
+      {"Key": "Email", "Value": email},
+      {"Key": "FederatedProvider", "Value": "arn:aws:iam::703671919012:oidc-provider/cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ"}
+    ]
+
+    # Step 2: Get the Identity ID from Cognito
+    cognito_identity_client = boto3.client("cognito-identity", region_name=region)
+    response = cognito_identity_client.get_id(
+        IdentityPoolId=identity_pool_id,
+        Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
+    )
+    identity_id = response["IdentityId"]
+
+    # Step 3: Get AWS credentials for the Identity ID
+    credentials_response = cognito_identity_client.get_credentials_for_identity(
+        IdentityId=identity_id,
+        Logins={"cognito-idp.us-west-2.amazonaws.com/us-west-2_oB53gulKJ": id_token}
+    )
+    credentials = credentials_response["Credentials"]
+    st.write(credentials)
+
+    # Step 4: Assume the role using the temporary credentials
+    session = boto3.Session(
+        aws_access_key_id=credentials["AccessKeyId"],
+        aws_secret_access_key=credentials["SecretKey"],
+        aws_session_token=credentials["SessionToken"],
+        region_name=region
+    )
+    sts_client = session.client("sts")
+    assumed_role = sts_client.assume_role(
+        RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
+        RoleSessionName="session_name",
+        Tags=tags
+    )
+    st.write("Assumed Role")
 
     # Return the credentials from the assumed role
 
@@ -83,22 +83,22 @@ def get_aws_credentials(identity_pool_id, region, id_token):
 
 
     # Step 1: Decode the ID token to verify claims if needed
-    decoded_token = jwt.decode(id_token, options={"verify_signature": False})
-    email = decoded_token.get("email")
-    if not email:
-      raise ValueError("Email claim is missing from the ID token")
-
-    tags = [
-    {"Key": "Email", "Value": email}
-    ]
-
-    # Step 2: Assume the role using the ID token
-    sts_client = boto3.client("sts", region_name=region)
-    assumed_role = sts_client.assume_role_with_web_identity(
-        RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
-        RoleSessionName="session_name",
-        WebIdentityToken=id_token,
-    )
+    # decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+    # email = decoded_token.get("email")
+    # if not email:
+    #   raise ValueError("Email claim is missing from the ID token")
+    #
+    # tags = [
+    # {"Key": "Email", "Value": email}
+    # ]
+    #
+    # # Step 2: Assume the role using the ID token
+    # sts_client = boto3.client("sts", region_name=region)
+    # assumed_role = sts_client.assume_role_with_web_identity(
+    #     RoleArn="arn:aws:iam::703671919012:role/steve_ai_cognito_identity_pool_role",
+    #     RoleSessionName="session_name",
+    #     WebIdentityToken=id_token,
+    # )
 
     return assumed_role["Credentials"]
   except Exception as e:
